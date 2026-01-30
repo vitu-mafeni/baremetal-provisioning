@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: server1-bmc-secret2
+  namespace: default
+type: Opaque
+stringData:
+  username: ADMIN
+  password: ADMIN
+---
+apiVersion: metal3.io/v1alpha1
+kind: BareMetalHost
+metadata:
+  name: server187
+  namespace: default
+spec:
+  online: true
+  bootMACAddress: ac:1f:6b:60:a0:ad   # eno4 MAC
+  bootMode: UEFI
+  bmc:
+    address: ipmi://192.168.3.187
+    credentialsName: server1-bmc-secret2
+    disableCertificateVerification: true
+---
+apiVersion: metal3.io/v1alpha1
+kind: BareMetalHost
+metadata:
+  name: server1
+  namespace: default
+spec:
+  online: true
+  bootMACAddress: ac:1f:6b:6b:d7:52   # eno4 MAC
+  bootMode: UEFI
+  bmc:
+    address: ipmi://192.168.3.162
+    credentialsName: server1-bmc-secret2
+    disableCertificateVerification: true

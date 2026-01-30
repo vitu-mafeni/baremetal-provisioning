@@ -1,0 +1,189 @@
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: Cluster
+metadata:
+  name: my-cluster
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 192.168.10.0/24
+    serviceDomain: cluster.local
+    services:
+      cidrBlocks:
+      - 10.96.0.0/12
+  controlPlaneRef:
+    apiGroup: controlplane.cluster.x-k8s.io
+    kind: KubeadmControlPlane
+    name: my-cluster
+  infrastructureRef:
+    apiGroup: infrastructure.cluster.x-k8s.io
+    kind: Metal3Cluster
+    name: my-cluster
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: Metal3Cluster
+metadata:
+  name: my-cluster
+  namespace: default
+spec:
+  cloudProviderEnabled: false
+  controlPlaneEndpoint:
+    host: 192.168.3.92
+    port: 6443
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+kind: KubeadmControlPlane
+metadata:
+  name: my-cluster
+  namespace: default
+spec:
+  kubeadmConfigSpec:
+    initConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+        - name: node-labels
+          value: metal3.io/uuid={{ ds.meta_data.uuid }}
+        name: '{{ ds.meta_data.name }}'
+    joinConfiguration:
+      controlPlane: {}
+      nodeRegistration:
+        kubeletExtraArgs:
+        - name: node-labels
+          value: metal3.io/uuid={{ ds.meta_data.uuid }}
+        name: '{{ ds.meta_data.name }}'
+    preKubeadmCommands:
+    - systemctl enable --now crio
+    users:
+    - name: user
+      sudo: ALL=(ALL) NOPASSWD:ALL
+      groups: wheel
+      sshAuthorizedKeys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCoSwHbkNC3L/eZ9uJjX2GUIJNOQjEBy1Y/Tiu89dqTK47PXu2UoLXC+EKQyzwCiJ+xX+OOXnaxp6yJxFdoZjQtD0p6u1lsv0EP6GfAX4W0PcdgO3UBSF+WJYOXst51nZG0SQ7M8Jq9ZZZB4WSRw5NhI9WZy+7BzYrAe6/ZkfvRthwFDRun1o46nQwt9UP7cCSMOKjS3Heq//Xs9wQeyYc6Gs/myaBp1Rk7QH4Z730jLhR0i6uutIhBTleA97gDLXosZcd0ksb+LIqWH/0C9MMJDHRbXC/KDYjn61lF3LXmk6TIDYDu5JNYySTTRvibVY+vZ7+4bCsU5HqyIg6VQCCPLFzvxV6r44d+PmNvdVxlCtXEv6pLMNCiImC2xWKEa3jF3ylhyq17/AtYkb0dgIPXqhqxwjsIumr3QQR3GBijD4zlp0EfPRQcHEmmnv17h+G+Qq4i4jXaPZbPgtNUCr436j0MxjNj8HO9Dfk4LdfTpIMQwm+8ohmAnVTbrzSqNsU=
+        ubuntu@ubuntu111
+  machineTemplate:
+    spec:
+      deletion:
+        nodeDrainTimeoutSeconds: 0
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: Metal3MachineTemplate
+        name: my-cluster-controlplane
+  replicas: 1
+  rollout:
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+      type: RollingUpdate
+  version: v1.34.1
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: Metal3MachineTemplate
+metadata:
+  name: my-cluster-controlplane
+  namespace: default
+spec:
+  nodeReuse: false
+  template:
+    spec:
+      automatedCleaningMode: metadata
+      dataTemplate:
+        name: my-cluster-controlplane-template
+      image:
+        checksum: http://192.168.3.182/CENTOS_10_NODE_IMAGE_K8S_v1.34.1.qcow2.sha256sum
+        checksumType: sha256
+        format: qcow2
+        url: http://192.168.3.182/CENTOS_10_NODE_IMAGE_K8S_v1.34.1.qcow2
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachineDeployment
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: my-cluster
+    nodepool: nodepool-0
+  name: my-cluster
+  namespace: default
+spec:
+  clusterName: my-cluster
+  replicas: 1
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: my-cluster
+      nodepool: nodepool-0
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: my-cluster
+        nodepool: nodepool-0
+    spec:
+      bootstrap:
+        configRef:
+          apiGroup: bootstrap.cluster.x-k8s.io
+          kind: KubeadmConfigTemplate
+          name: my-cluster-workers
+      clusterName: my-cluster
+      deletion:
+        nodeDrainTimeoutSeconds: 0
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: Metal3MachineTemplate
+        name: my-cluster-workers
+      version: v1.34.1
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: Metal3MachineTemplate
+metadata:
+  name: my-cluster-workers
+  namespace: default
+spec:
+  nodeReuse: false
+  template:
+    spec:
+      automatedCleaningMode: metadata
+      dataTemplate:
+        name: my-cluster-workers-template
+      image:
+        checksum: http://192.168.3.182/CENTOS_10_NODE_IMAGE_K8S_v1.34.1.qcow2.sha256sum
+        checksumType: sha256
+        format: qcow2
+        url: http://192.168.3.182/CENTOS_10_NODE_IMAGE_K8S_v1.34.1.qcow2
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+kind: KubeadmConfigTemplate
+metadata:
+  name: my-cluster-workers
+  namespace: default
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+          - name: node-labels
+            value: metal3.io/uuid={{ ds.meta_data.uuid }}
+          name: '{{ ds.meta_data.name }}'
+      preKubeadmCommands:
+      - systemctl enable --now crio
+      users:
+      - name: user
+        sudo: ALL=(ALL) NOPASSWD:ALL
+        groups: wheel
+        sshAuthorizedKeys:
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCoSwHbkNC3L/eZ9uJjX2GUIJNOQjEBy1Y/Tiu89dqTK47PXu2UoLXC+EKQyzwCiJ+xX+OOXnaxp6yJxFdoZjQtD0p6u1lsv0EP6GfAX4W0PcdgO3UBSF+WJYOXst51nZG0SQ7M8Jq9ZZZB4WSRw5NhI9WZy+7BzYrAe6/ZkfvRthwFDRun1o46nQwt9UP7cCSMOKjS3Heq//Xs9wQeyYc6Gs/myaBp1Rk7QH4Z730jLhR0i6uutIhBTleA97gDLXosZcd0ksb+LIqWH/0C9MMJDHRbXC/KDYjn61lF3LXmk6TIDYDu5JNYySTTRvibVY+vZ7+4bCsU5HqyIg6VQCCPLFzvxV6r44d+PmNvdVxlCtXEv6pLMNCiImC2xWKEa3jF3ylhyq17/AtYkb0dgIPXqhqxwjsIumr3QQR3GBijD4zlp0EfPRQcHEmmnv17h+G+Qq4i4jXaPZbPgtNUCr436j0MxjNj8HO9Dfk4LdfTpIMQwm+8ohmAnVTbrzSqNsU=
+          ubuntu@ubuntu111
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: Metal3DataTemplate
+metadata:
+  name: my-cluster-controlplane-template
+  namespace: default
+spec:
+  clusterName: my-cluster
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: Metal3DataTemplate
+metadata:
+  name: my-cluster-workers-template
+  namespace: default
+spec:
+  clusterName: my-cluster

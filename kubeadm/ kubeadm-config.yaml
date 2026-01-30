@@ -1,0 +1,50 @@
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: "0.0.0.0"
+  bindPort: 6443
+nodeRegistration:
+  criSocket: unix:///var/run/containerd/containerd.sock
+  imagePullPolicy: IfNotPresent
+  imagePullSerial: true
+  taints:
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/control-plane
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+kubernetesVersion: "v1.34.2"
+clusterName: ml-platform
+networking:
+  podSubnet: "10.244.0.0/16"
+  serviceSubnet: "10.96.0.0/12"
+  dnsDomain: cluster.local
+controlPlaneEndpoint: ""
+apiServer:
+  extraArgs:
+    - name: runtime-config
+      value: "resource.k8s.io/v1beta1=true"
+    - name: feature-gates
+      value: "DynamicResourceAllocation=true"
+  certSANs: []
+controllerManager:
+  extraArgs:
+    - name: feature-gates
+      value: "DynamicResourceAllocation=true"
+scheduler:
+  extraArgs:
+    - name: feature-gates
+      value: "DynamicResourceAllocation=true"
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: systemd
+containerRuntimeEndpoint: unix:///var/run/containerd/containerd.sock
+featureGates:
+  DynamicResourceAllocation: true
+runtimeRequestTimeout: "15m"
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+mode: ipvs

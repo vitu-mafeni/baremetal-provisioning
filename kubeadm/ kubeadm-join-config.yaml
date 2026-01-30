@@ -1,0 +1,22 @@
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: JoinConfiguration
+nodeRegistration:
+  criSocket: unix:///var/run/containerd/containerd.sock
+  imagePullPolicy: IfNotPresent
+  imagePullSerial: true
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: "<CONTROL_PLANE_ENDPOINT>:6443"
+    token: "<BOOTSTRAP_TOKEN>"
+    caCertHashes:
+      - "sha256:<CA_CERT_HASH>"
+    unsafeSkipCAVerification: false
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: systemd
+containerRuntimeEndpoint: unix:///var/run/containerd/containerd.sock
+featureGates:
+  DynamicResourceAllocation: true
+runtimeRequestTimeout: "15m"
