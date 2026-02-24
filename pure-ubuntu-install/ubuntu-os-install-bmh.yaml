@@ -1,0 +1,32 @@
+apiVersion: metal3.io/v1alpha1
+kind: BareMetalHost
+metadata:
+  name: server1
+  namespace: default
+spec:
+  online: true
+  bootMACAddress: ac:1f:6b:6b:d7:52   # eno4 MAC
+  bootMode: UEFI
+  bmc:
+    address: ipmi://192.168.3.162
+    credentialsName: server1-bmc-secret2
+    disableCertificateVerification: true
+  image:
+    checksumType: sha256
+    checksum: http://192.168.3.99/SHA256SUMS
+    format: qcow2
+    url: http://192.168.3.99/jammy-server-cloudimg-amd64.img
+  userData:
+    name: server1-user-data
+    namespace: default
+  # networkData:
+  #   name: worker-networkdata
+  #   namespace: default
+# kubectl create secret generic server1-user-data \
+#   --from-file=value=user-data.yaml \
+#   --from-literal=format=cloud-config
+
+# kubectl create secret generic worker-networkdata \
+#   --namespace default \
+#   --from-file=networkData=network-data.yaml
+  

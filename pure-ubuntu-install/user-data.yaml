@@ -1,0 +1,15 @@
+#cloud-config
+users:
+  - name: ubuntu
+    groups: sudo
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: false
+    passwd: "$6$M0WGY9jJk2xaHje6$2s0Xdw4jI8z4VYOlXhMI87YmvFoCntJgaS/F37v7NzgM07PNh42U0pdFPH/Pvnp8kZb5Mk7DZAI88yY46xtEM."
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDsFAKuoUPGVCOrn0rAPOgQVSKeRy9qxe/phWV8KhEUVw+AklJkZHmi1g7svrNqUVsRaGs/fmjQ9HaVbg2fuXZXUcVNOI10sEAD83heLHRW4sROidaFoUg6+pQn303wvzdgVU5i3xzWpg6kiZNnBjBc1PDkjm6Wv5bC5Qe3dYhXMyGW2Ygw9OitnRqP4LuwWhT3XdVJkjq7vHK8GOpTgIcmA6Lhn2txA3EsUcqTpLeTqmDbGKSwNw0g5v56l9y7lWni0jRn3Tlxg8ntloS9wpDLcTjVpX0CEgJl+emvqx0LDiuMPl6dOSd5cMClZdO9puU9spIMY6mgT7Wg7g1TNV75wejWuwOoROLG9DIG7tuhjMb8fP/6zdIcqJEqFkbRycR7LH3NTQf1whiVcmkqtvWYpN4LDMsw0pggYznnWVQuq4BzNH4yKiRqpfJrWQ5ZI3Xa2nsh5jweLsNrpMKmTmftnYkvugCR41xjh3Oia/tsBorjQdma2svLORasr7Q5BAE= ubuntu@ubuntu111
+
+chpasswd:
+  expire: false
+
+ssh_pwauth: true
+disable_root: false

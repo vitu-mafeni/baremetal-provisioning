@@ -42,6 +42,13 @@ Install these on the **management node**:
 
 - No router connected  
 - Used for provisioning and Ironic traffic  
+- Add IP address manually on the interface
+```bash
+  sudo ip addr add 172.22.0.1/24 dev eno1
+  sudo ip link set eno1 up
+  ip addr show eno1
+
+```
 
 ### Host Interfaces
 
@@ -115,4 +122,25 @@ Set variables in *.env*, then:
 ```bash
 source .env
 kubectl apply -f cluster-metal.yaml
+```
+
+## Troubleshooting
+You initialized Kubernetes (likely with kubeadm) but:
+
+CNI plugins were not installed
+or
+
+/opt/cni/bin is empty
+or
+
+The CNI tarball was never extracted
+```bash
+sudo mkdir -p /opt/cni/bin
+
+CNI_VERSION="v1.5.1"
+
+wget https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-linux-amd64-${CNI_VERSION}.tgz
+
+sudo tar -C /opt/cni/bin -xzf cni-plugins-linux-amd64-${CNI_VERSION}.tgz
+
 ```
